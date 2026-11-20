@@ -24,30 +24,30 @@ print_status() {
 
 	case "$status" in
 	success)
-		echo -e "${GREEN}[✓]${NC} ${message}"
+		printf '%b%s%b %s\n' "${GREEN}" '[✓]' "${NC}" "$message"
 		;;
 	error)
-		echo -e "${RED}[✗]${NC} ${message}" >&2
+		printf '%b%s%b %s\n' "${RED}" '[✗]' "${NC}" "$message" >&2
 		;;
 	warning)
-		echo -e "${YELLOW}[!]${NC} ${message}"
+		printf '%b%s%b %s\n' "${YELLOW}" '[!]' "${NC}" "$message"
 		;;
 	info)
-		echo -e "${BLUE}[i]${NC} ${message}"
+		printf '%b%s%b %s\n' "${BLUE}" '[i]' "${NC}" "$message"
 		;;
 	config)
-		echo -e "${CYAN}[→]${NC} ${message}"
+		printf '%b%s%b %s\n' "${CYAN}" '[→]' "${NC}" "$message"
 		;;
 	debug)
-		echo -e "${MAGENTA}[»]${NC} ${message}"
+		printf '%b%s%b %s\n' "${MAGENTA}" '[»]' "${NC}" "$message"
 		;;
 	section)
-		echo -e "\n${MAGENTA}========================================${NC}"
-		echo -e "${MAGENTA} $message${NC}"
-		echo -e "${MAGENTA}========================================${NC}\n"
+		printf '\n%b========================================%b\n' "${MAGENTA}" "${NC}"
+		printf '%b %s%b\n' "${MAGENTA}" "$message" "${NC}"
+		printf '%b========================================%b\n\n' "${MAGENTA}" "${NC}"
 		;;
 	*)
-		echo -e "${YELLOW}[?]${NC} ${message}" >&2
+		printf '%b%s%b %s\n' "${YELLOW}" '[?]' "${NC}" "$message" >&2
 		echo "print_status: unknown status '${status}' — expected one of:" \
 			"success|error|warning|info|config|debug|section" >&2
 		;;
@@ -97,9 +97,9 @@ _read_env_var() {
 	if [[ "$value" == \"*\" ]]; then
 		value="${value#\"}"
 		value="${value%\"}"
-	elif [[ "$value" == \'*\' ]]; then
-		value="${value#\'}"
-		value="${value%\'}"
+	elif [[ "$value" == '*' ]]; then
+		value="${value#'}"
+		value="${value%'}"
 	fi
 	printf '%s' "$value"
 }

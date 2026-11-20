@@ -2465,7 +2465,7 @@ def _run_venv_sh(
         The completed run.
     """
     dict_env = {
-        "PATH": ":".join(map(str, list_path_dirs)),
+        "PATH": os.pathsep.join(map(str, list_path_dirs)),
         "HOME": str(path_script.parent),
         **dict_extra_env,
     }
