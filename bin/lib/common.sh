@@ -24,30 +24,29 @@ print_status() {
 
 	case "$status" in
 	success)
-		printf '%b%s%b %s\n' "${GREEN}" '[✓]' "${NC}" "$message"
+		printf "%b %s\n" "${GREEN}[✓]${NC}" "$message"
 		;;
 	error)
-		printf '%b%s%b %s\n' "${RED}" '[✗]' "${NC}" "$message" >&2
+		printf "%b %s\n" "${RED}[✗]${NC}" "$message" >&2
 		;;
 	warning)
-		printf '%b%s%b %s\n' "${YELLOW}" '[!]' "${NC}" "$message"
+		printf "%b %s\n" "${YELLOW}[!]${NC}" "$message"
 		;;
 	info)
-		printf '%b%s%b %s\n' "${BLUE}" '[i]' "${NC}" "$message"
+		printf "%b %s\n" "${BLUE}[i]${NC}" "$message"
 		;;
 	config)
-		printf '%b%s%b %s\n' "${CYAN}" '[→]' "${NC}" "$message"
+		printf "%b %s\n" "${CYAN}[→]${NC}" "$message"
 		;;
 	debug)
-		printf '%b%s%b %s\n' "${MAGENTA}" '[»]' "${NC}" "$message"
+		printf "%b %s\n" "${MAGENTA}[»]${NC}" "$message"
 		;;
 	section)
-		printf '\n%b========================================%b\n' "${MAGENTA}" "${NC}"
-		printf '%b %s%b\n' "${MAGENTA}" "$message" "${NC}"
-		printf '%b========================================%b\n\n' "${MAGENTA}" "${NC}"
+		printf "\n%b\n%b %s%b\n%b\n\n" "${MAGENTA}========================================${NC}" \
+			"$MAGENTA" "$message" "$NC" "${MAGENTA}========================================${NC}"
 		;;
 	*)
-		printf '%b%s%b %s\n' "${YELLOW}" '[?]' "${NC}" "$message" >&2
+		printf "%b %s\n" "${YELLOW}[?]${NC}" "$message" >&2
 		echo "print_status: unknown status '${status}' — expected one of:" \
 			"success|error|warning|info|config|debug|section" >&2
 		;;
@@ -97,9 +96,9 @@ _read_env_var() {
 	if [[ "$value" == \"*\" ]]; then
 		value="${value#\"}"
 		value="${value%\"}"
-	elif [[ "$value" == '*' ]]; then
-		value="${value#'}"
-		value="${value%'}"
+	elif [[ "$value" == \'*\' ]]; then
+		value="${value#\'}"
+		value="${value%\'}"
 	fi
 	printf '%s' "$value"
 }

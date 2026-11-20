@@ -2379,7 +2379,10 @@ _TUPLE_VENV_SH_TOOLS = ("basename", "cat", "cp", "date", "dirname", "grep", "hea
 
 
 def _link_tool(path_dir: Path, str_tool: str) -> None:
-    """Symlink one host tool into a directory so a hermetic ``PATH`` can still resolve it.
+    """Wrap one host tool in a directory so a hermetic ``PATH`` can still resolve it.
+
+    A wrapper, not a symlink: on Windows a link named ``dirname`` to ``dirname.EXE`` is not
+    found by bash, and the binary loses the directory its MSYS DLL is loaded from.
 
     Parameters
     ----------
@@ -2392,7 +2395,9 @@ def _link_tool(path_dir: Path, str_tool: str) -> None:
     -------
     None
     """
-    (path_dir / str_tool).symlink_to(shutil.which(str_tool) or "/bin/false")
+    str_target = Path(shutil.which(str_tool) or "/bin/false").as_posix()
+    path_link = _write(path_dir / str_tool, f'#!/bin/bash\nexec "{str_target}" "$@"\n')
+    path_link.chmod(0o755)
 
 
 def _stage_tools_dir(path_root: Path) -> Path:
@@ -2436,7 +2441,7 @@ def _write_stub_python(path_dir: Path, int_in_venv: int) -> Path:
     path_log = path_dir / "calls.log"
     path_stub = _write(
         path_dir / "python3",
-        f'#!{_STR_BASH}\nprintf "%s\\n" "$*" >>"{path_log}"\ncase "$1" in\n'
+        f'#!/bin/bash\nprintf "%s\\n" "$*" >>"{path_log}"\ncase "$1" in\n'
         f'--version) echo "Python 3.12.2" ;;\n-c) exit {int_in_venv} ;;\n'
         '-m) [ "$2" = venv ] && mkdir -p "$3/bin" || exit 1 ;;\n*) exit 1 ;;\nesac\n',
     )
@@ -2472,7 +2477,7 @@ def _run_venv_sh(
     return subprocess.run(  # noqa: S603
         [_STR_BASH, str(path_script)],
         capture_output=True,
-        text=True,
+        encoding="utf-8",
         check=False,
         timeout=60,
         env=dict_env,
