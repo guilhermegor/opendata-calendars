@@ -10,7 +10,6 @@ Tests the cache management functionality with various input scenarios including:
 from datetime import datetime, timedelta
 from logging import Logger
 from pathlib import Path
-import pickle  # noqa: S403 — tests round-trip the cache files the manager itself writes
 import re
 from typing import Any
 from unittest.mock import Mock, patch
@@ -536,8 +535,7 @@ def test_load_cache_from_file(
     None
     """
     cache_file = cache_manager_custom._get_cache_file_path("test_key")
-    with open(cache_file, "wb") as f:
-        pickle.dump((datetime.now(), sample_dataframe), f)
+    CacheManager._write_cache_file(cache_file, datetime.now(), sample_dataframe)
 
     result = cache_manager_custom._load_cache("test_key")
     assert result.equals(sample_dataframe)
@@ -569,8 +567,7 @@ def test_load_cache_expired(
     # one-assert-ok: ported verbatim; facets of one scenario, split tracked in the ledger
     cache_file = cache_manager_custom._get_cache_file_path("test_key")
     past_time = datetime.now() - timedelta(days=2)
-    with open(cache_file, "wb") as f:
-        pickle.dump((past_time, sample_dataframe), f)
+    CacheManager._write_cache_file(cache_file, past_time, sample_dataframe)
 
     cache_manager_custom.timedelta_cache_expiry = timedelta(days=1)
     result = cache_manager_custom._load_cache("test_key")
@@ -581,7 +578,7 @@ def test_load_cache_expired(
 def test_load_cache_invalid_file(
     cache_manager_custom: CacheManager, mocker: MockerFixture
 ) -> None:
-    """Test _load_cache with invalid pickle file.
+    """Test _load_cache with invalid cache file.
 
     Verifies
     --------
@@ -602,7 +599,7 @@ def test_load_cache_invalid_file(
     # one-assert-ok: ported verbatim; facets of one scenario, split tracked in the ledger
     cache_file = cache_manager_custom._get_cache_file_path("test_key")
     with open(cache_file, "wb") as f:
-        f.write(b"invalid pickle data")
+        f.write(b"not json")
 
     assert cache_manager_custom._load_cache("test_key") is None
     assert not cache_file.exists()
@@ -627,7 +624,7 @@ def test_get_cache_file_path_sanitization(cache_manager_default: CacheManager) -
     """
     key = "test@#$%^&*key"
     result = cache_manager_default._get_cache_file_path(key)
-    assert result.name == "test_______key.pkl"
+    assert result.name == "test_______key.json"
 
 
 @pytest.mark.parametrize(
@@ -738,10 +735,9 @@ def test_save_cache_to_disk(
     cache_manager_custom._save_cache("test_key", sample_dataframe)
     cache_file = cache_manager_custom._get_cache_file_path("test_key")
     assert cache_file.exists()
-    with open(cache_file, "rb") as f:
-        creation_time, saved_df = pickle.load(f)  # noqa S301: `pickle` and modules that wrap it can be unsafe when used to deserialize untrusted data
-        assert saved_df.equals(sample_dataframe)
-        assert isinstance(creation_time, datetime)
+    creation_time, saved_df = CacheManager._read_cache_file(cache_file)
+    assert saved_df.equals(sample_dataframe)
+    assert isinstance(creation_time, datetime)
 
 
 def test_save_cache_invalid_df(cache_manager_custom: CacheManager, mocker: MockerFixture) -> None:
@@ -794,8 +790,9 @@ def test_clean_old_cache(
     None
     """
     cache_file = cache_manager_custom._get_cache_file_path("test_key")
-    with open(cache_file, "wb") as f:
-        pickle.dump((datetime.now() - timedelta(days=31), sample_dataframe), f)
+    CacheManager._write_cache_file(
+        cache_file, datetime.now() - timedelta(days=31), sample_dataframe
+    )
 
     cache_manager_custom.timedelta_cache_ttl_days = timedelta(days=30)
     cache_manager_custom._clean_old_cache()
@@ -823,8 +820,9 @@ def test_clean_old_cache_no_persist(
     None
     """
     cache_file = cache_manager_custom._get_cache_file_path("old_key")
-    with open(cache_file, "wb") as f:
-        pickle.dump((datetime.now() - timedelta(days=31), sample_dataframe), f)
+    CacheManager._write_cache_file(
+        cache_file, datetime.now() - timedelta(days=31), sample_dataframe
+    )
 
     cache_manager_custom.bool_persist_cache = False
     cache_manager_custom.timedelta_cache_ttl_days = timedelta(days=30)
@@ -878,8 +876,7 @@ def test_clear_caches_disk(
     None
     """
     cache_file = cache_manager_custom._get_cache_file_path("test_key")
-    with open(cache_file, "wb") as f:
-        pickle.dump((datetime.now(), sample_dataframe), f)
+    CacheManager._write_cache_file(cache_file, datetime.now(), sample_dataframe)
 
     cache_manager_custom.clear_caches()
     assert not cache_file.exists()
@@ -960,7 +957,7 @@ def test_empty_key_cache_df(  # complexity-ok: ported verbatim
     result = dummy_func(cache_manager_custom)
     assert not result.empty
     cache_file = cache_manager_custom._get_cache_file_path("")
-    assert cache_file.name == ".pkl"
+    assert cache_file.name == ".json"
 
 
 def test_unicode_key(cache_manager_custom: CacheManager, sample_dataframe: pd.DataFrame) -> None:
@@ -987,7 +984,7 @@ def test_unicode_key(cache_manager_custom: CacheManager, sample_dataframe: pd.Da
     cache_manager_custom._save_cache(key, sample_dataframe)
     cache_file = cache_manager_custom._get_cache_file_path(key)
     assert cache_file.exists()
-    assert cache_file.name == "test_日本語__.pkl"
+    assert cache_file.name == "test_日本語__.json"
 
 
 def test_default_emitter_is_rich_and_prints_context(capsys: pytest.CaptureFixture[str]) -> None:
@@ -1019,3 +1016,99 @@ def test_default_emitter_is_rich_and_prints_context(capsys: pytest.CaptureFixtur
     assert "[" in str_out
     assert "hello world" in str_out
     assert "[INFO] hello world" not in str_out
+
+
+def test_cache_round_trip_preserves_frame_and_timestamp(
+    cache_manager_custom: CacheManager, sample_dataframe: pd.DataFrame
+) -> None:
+    """Test a DataFrame and its creation timestamp survive a disk round trip.
+
+    Verifies
+    --------
+    - The frame read back equals the frame written
+    - The creation timestamp is preserved exactly
+
+    Parameters
+    ----------
+    cache_manager_custom : CacheManager
+            CacheManager instance with custom settings
+    sample_dataframe : pd.DataFrame
+            Sample DataFrame for testing
+
+    Returns
+    -------
+    None
+    """
+    # one-assert-ok: facets of one round trip
+    created = datetime(2026, 1, 2, 3, 4, 5)
+    path_file = cache_manager_custom._get_cache_file_path("round_trip")
+    df_ = sample_dataframe.assign(day=pd.Timestamp("2026-01-01"))
+    CacheManager._write_cache_file(path_file, created, df_)
+    created_back, df_back = CacheManager._read_cache_file(path_file)
+    assert created_back == created
+    pd.testing.assert_frame_equal(df_back, df_)
+
+
+@pytest.mark.parametrize(
+    "df_",
+    [
+        pd.DataFrame({0: [1, 2], 1: ["a", "b"]}),
+        pd.DataFrame({"updated_at": pd.to_datetime(["2026-01-01 10:00:00.123456"], utc=True)}),
+        pd.DataFrame({"v": [1]}, index=pd.DatetimeIndex(["2026-01-02"], name="day")),
+    ],
+    ids=["integer-column-labels", "microsecond-timestamps", "named-datetime-index"],
+)
+def test_cache_round_trip_preserves_labels_precision_and_index(
+    cache_manager_custom: CacheManager, df_: pd.DataFrame
+) -> None:
+    """Test frames that broke the first JSON format survive a disk round trip.
+
+    Verifies
+    --------
+    - Integer column labels, microsecond timestamps and a named DatetimeIndex
+      read back equal to what was written
+
+    Parameters
+    ----------
+    cache_manager_custom : CacheManager
+            CacheManager instance with custom settings
+    df_ : pd.DataFrame
+            Frame to round-trip
+
+    Returns
+    -------
+    None
+    """
+    path_file = cache_manager_custom._get_cache_file_path("round_trip_shapes")
+    CacheManager._write_cache_file(path_file, datetime(2026, 1, 2), df_)
+    pd.testing.assert_frame_equal(CacheManager._read_cache_file(path_file)[1], df_)
+
+
+def test_stray_pkl_is_never_loaded(
+    cache_manager_custom: CacheManager, sample_dataframe: pd.DataFrame
+) -> None:
+    """Test a legacy .pkl file is ignored, not unpickled.
+
+    Verifies
+    --------
+    - The load is a miss even though a .pkl exists for the key
+    - The .pkl file is left untouched on disk
+
+    Parameters
+    ----------
+    cache_manager_custom : CacheManager
+            CacheManager instance with custom settings
+    sample_dataframe : pd.DataFrame
+            Sample DataFrame for testing
+
+    Returns
+    -------
+    None
+    """
+    # one-assert-ok: facets of one scenario
+    stray = cache_manager_custom._get_cache_file_path("legacy").with_suffix(".pkl")
+    stray.write_bytes(b"would execute if unpickled")
+    assert cache_manager_custom._load_cache("legacy") is None
+    cache_manager_custom._clean_old_cache()
+    cache_manager_custom.clear_caches()
+    assert stray.exists()
