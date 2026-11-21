@@ -294,8 +294,9 @@ source siblings at runtime paths shellcheck cannot resolve. Any other
 
 ## Quality and comment-discipline gates
 
-One line each: what it enforces, how to run it. Every gate is a pre-commit hook and, except
-`check_dead_code.py` and the PR-only ones, a `tests.yml` step. Run any of them with
+One line each: what it enforces, how to run it. Every gate except `check_dead_code.py` is a
+pre-commit hook. Every gate except `check_dead_code.py` and the PR-only ones is a `tests.yml`
+step. `check_dead_code.py` is not wired into either. Run any of them with
 `poetry run python bin/<name>.py` (`bash bin/check_complexity.sh` for the shell one).
 
 | Gate | Enforces |
