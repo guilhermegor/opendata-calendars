@@ -8,22 +8,35 @@ alone — copy it and adjust.
 
 ---
 
-## Recipe: <a common task>
+## Recipe: business days from the ANBIMA calendar
 
-Briefly describe the problem this recipe solves, then show the smallest working snippet.
+Count the working days between two dates with the table ANBIMA publishes.
 
 ```python
-from <project_name> import main
+from datetime import date
 
+from opendata_calendars.br import DatesBRAnbimaWeb
 
-# Replace with a real, runnable example of your public API.
-main()
+cls_calendar = DatesBRAnbimaWeb()
+print(cls_calendar.holidays()[0])
+print(cls_calendar.is_working_day(date(2026, 4, 21)))
 ```
 
-## Recipe: <another task>
+## Recipe: keep the fetch in memory
 
-Add one `##` section per recipe. Comments in the code should explain **why**, not just what.
+Skip the disk cache, for example in a short-lived job.
 
 ```python
-# Replace with a second illustrative example.
+from opendata_calendars.us import DatesUSNasdaq
+
+cls_calendar = DatesUSNasdaq(bool_persist_cache=False)
+print(cls_calendar.holidays()[0])
+```
+
+## Recipe: read the installed version
+
+```python
+import opendata_calendars
+
+print(opendata_calendars.__version__)
 ```

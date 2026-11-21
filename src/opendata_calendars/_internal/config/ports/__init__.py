@@ -4,12 +4,9 @@ In ports-and-adapters terms these ABCs are the **ports**: the abstract operation
 macro-section's concrete classes (the *adapters*) implement, so every variant conforms to the
 same shape. They ship inside the wheel under ``_internal`` but are **not** part of the public
 API — consumers import the concrete adapters, never these ports. Re-export each port here so
-callers use one import: ``from <pkg>._internal.config.ports import ExamplePort``.
+callers use one import: ``from <pkg>._internal.config.ports import <Port>``.
+
+No port is defined yet; add one file per shared operation and re-export it below.
 """
 
-from opendata_calendars._internal.config.ports.example_port import ExamplePort
-
-
-__all__ = [
-    "ExamplePort",
-]
+__all__: list[str] = []

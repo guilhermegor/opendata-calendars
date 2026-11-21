@@ -6,29 +6,43 @@ Public interface for this library.
 
 ---
 
-## Module: `main`
+## Package: `opendata_calendars`
 
-Entry point module. Extend this with your library's public functions.
+The public surface is the `__all__` of `opendata_calendars`, `opendata_calendars.br` and
+`opendata_calendars.us`.
 
-### `main() -> None`
+### `__version__: str`
 
-Runs the library entry point. Replace the body with your top-level logic.
+The installed distribution's version, or `"0.0.0"` when running from a source tree without an
+installed distribution.
 
-```python
-from <package_name>.main import main
+---
 
-main()
-```
+## Package: `opendata_calendars.br`
+
+| Class | Source |
+|-------|--------|
+| `DatesBRAnbimaWeb` | ANBIMA national holidays workbook |
+| `DatesBRB3Web` | B3 trading calendar page |
+| `DatesBRFebrabanWeb` | FEBRABAN banking holidays endpoint |
+
+## Package: `opendata_calendars.us`
+
+| Class | Source |
+|-------|--------|
+| `DatesUSFederalHolidaysWeb` | federalholidays.net, scraped with Playwright (`web` extra) |
+| `DatesUSNasdaq` | Nasdaq market holidays page |
+
+Each class is a `purecalendars` calendar: `holidays()`, `is_working_day()` and the rest of the
+business-day arithmetic come from that package. The constructors take `bool_persist_cache`,
+`bool_reuse_cache`, `int_days_cache_expiration`, `int_cache_ttl_days`, `path_cache_dir` and
+`logger`.
 
 ---
 
 ## Adding new modules
 
-Place new modules under `src/<package_name>/`. Export public symbols from `src/<package_name>/__init__.py` so callers can do:
-
-```python
-from <package_name> import my_function
-```
+Place new modules under `src/opendata_calendars/`. Export public symbols from `src/opendata_calendars/__init__.py` and add them to `__all__`, so callers can do `from opendata_calendars import <name>`.
 
 Follow the one-class-per-file convention: utility functions with no shared state belong at module level, not wrapped in a class.
 

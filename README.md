@@ -20,12 +20,6 @@
 
 Fetch exchange and bank holiday calendars from their publishers (B3, ANBIMA, FEBRABAN, NASDAQ, US federal), with cache and provenance, returned as purecalendars calendars
 
-<!-- optional section: delete it when the project has no feature list -->
-<!-- slug: features -->
-## Features
-
-- The capabilities users care about, one line each.
-
 <!-- slug: documentation -->
 ## Documentation
 
@@ -52,8 +46,26 @@ runs `poe init` without activating anything.
 <!-- slug: usage -->
 ### Usage
 
-Run the project through its entry points under `src/`; replace this paragraph with the
-commands your users run first.
+```bash
+pip install opendata-calendars
+```
+
+```python
+from datetime import date
+
+from opendata_calendars.br import DatesBRB3Web
+
+cls_calendar = DatesBRB3Web()
+print(cls_calendar.holidays()[:3])
+print(cls_calendar.is_working_day(date(2026, 12, 24)))
+```
+
+Each `*Web` class fetches its publisher's page, caches it on disk under `opendata_calendars_cache`,
+and exposes the business-day arithmetic of `purecalendars`. Brazilian providers live in
+`opendata_calendars.br` (B3, ANBIMA, FEBRABAN), US providers in `opendata_calendars.us` (Nasdaq,
+federal holidays). The federal-holidays scrape needs a browser: install the `web` extra and run
+`playwright install chromium` once. The classes build on the private calendar base of
+`purecalendars`, which is why the dependency is pinned below the next major.
 
 <!-- slug: project-structure -->
 ## Project Structure
@@ -64,7 +76,7 @@ opendata-calendars/
 ├── .specs/         feature specs and backlog trackers
 ├── bin/            gate scripts and helpers
 ├── docs/           published documentation
-├── src/            application code
+├── src/            the opendata_calendars package
 ├── tests/
 │   ├── unit/
 │   └── integration/
@@ -89,8 +101,20 @@ Once the first release's docs deploy has created the `gh-pages` branch, run
 <!-- slug: public-api -->
 ## Public API
 
-The public surface is whatever the package `__init__.py` lists in `__all__`; everything
-under `_internal/` is private.
+The public surface is the `__all__` of `opendata_calendars`, `opendata_calendars.br` and
+`opendata_calendars.us`; everything under `_internal/` is private. The top-level `__all__` is
+`["__version__"]`; the providers are `DatesBRAnbimaWeb`, `DatesBRB3Web` and `DatesBRFebrabanWeb`
+in `br`, and `DatesUSFederalHolidaysWeb` and `DatesUSNasdaq` in `us`.
+
+### API guarantee (1.x)
+
+From 1.0.0, the names in the `__all__` of `opendata_calendars`, `opendata_calendars.br` and
+`opendata_calendars.us` follow semantic versioning: removing or
+renaming one, or changing its signature or behaviour incompatibly, happens only in a new
+major version. New names and backwards-compatible changes arrive in minor and patch releases.
+Everything under `opendata_calendars._internal`, and any name not in `__all__`, is private and
+may change in any release. The package ships `py.typed`, so its annotations are part of the
+typed API.
 
 <!-- slug: publishing -->
 ## Publishing

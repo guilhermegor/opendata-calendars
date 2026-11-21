@@ -41,13 +41,13 @@ contractual. Please allow a reasonable window before any public disclosure.
 
 ## Supported versions
 
-Unless stated otherwise below, security fixes land on the **latest released version** only.
-Consumers pinned to an older line should upgrade to pick up a fix.
+Security fixes land on the latest 1.x release only. Consumers pinned to an older release
+should upgrade to pick up a fix.
 
 | Version | Supported |
 |---------|-----------|
-| latest  | ✅        |
-| older   | ❌        |
+| 1.x     | ✅        |
+| < 1.0   | ❌        |
 
 ## Scope
 

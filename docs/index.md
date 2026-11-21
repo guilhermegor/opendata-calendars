@@ -1,6 +1,6 @@
 # **opendata-calendars** <img src="assets/logo.png" align="right" width="200" style="border-radius: 15px;" alt="opendata-calendars">
 
-A minimal Python library with packaging, tests, CI, and linting pre-configured.
+Fetch exchange and bank holiday calendars from their publishers (B3, ANBIMA, FEBRABAN, NASDAQ, US federal), with cache and provenance, returned as purecalendars calendars.
 
 ---
 
