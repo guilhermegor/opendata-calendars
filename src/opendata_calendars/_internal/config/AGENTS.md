@@ -35,14 +35,13 @@ on a violation before types are applied).
   single `FileContract` constant. New input → new file.
 - `contracts/__init__.py` re-exports every contract **and** the machinery
   (`FileContract`, `find_file_problems` from `_internal.utils.tabular_reader`), so callers
-  use one import: `from <pkg>._internal.config.contracts import EXAMPLE_SOURCE`.
+  use one import: `from <pkg>._internal.config.contracts import FileContract, find_file_problems`.
 - A contract that constrains nothing is still explicit: `FileContract(name, key, (), ())`.
 - **`contracts/` is the ONLY place a `FileContract` is constructed** — statically enforced
   by ruff (`TID251`). Loaders import the instances; they never build one inline.
 
-`EXAMPLE_SOURCE` is a reference instance — copy `example_source.py` per real source and
-delete the example once your own contracts exist. Drop this whole sub-package if your
-library never reads tabular inputs.
+No contract is defined yet. Drop this whole sub-package if your library never reads
+tabular inputs.
 
 ## The `ports/` sub-package (opt-in)
 
@@ -55,21 +54,20 @@ implement, so callers treat any adapter polymorphically and every new variant co
 same shape. When two macro-sections share one operation (e.g. an `export`, a `read`), name that
 operation as a port here; the concrete classes are the adapters.
 
-- **One port per file** (`example_port.py`, `submission_writer.py`, …): a module docstring plus
+- **One port per file** (`submission_writer.py`, …): a module docstring plus
   a single ABC. New shared operation → new file.
 - **`metaclass=ABCTypeCheckerMeta`** on the port gives both abstract-method enforcement (a
   partial adapter fails at instantiation) and runtime type checking of every call.
 - **Adapters inherit the port and its metaclass** — never redeclare `metaclass` on a subclass;
   Python inherits it (the `check_typing` hook already skips a class with bases for that reason).
 - **Generic over its value** (`Generic[T]`): an adapter narrows the type through the type
-  parameter (`class CsvHandler(ExamplePort[pd.DataFrame])`) rather than by re-annotating the
+  parameter (`class CsvHandler(SubmissionWriter[pd.DataFrame])`) rather than by re-annotating the
   override, keeping the concrete signature Liskov-compatible.
 - `ports/__init__.py` re-exports every port so callers use one import:
-  `from <pkg>._internal.config.ports import ExamplePort`.
+  `from <pkg>._internal.config.ports import SubmissionWriter`.
 - Ports stay **private** — never add one to the library's public `__all__`.
 
-`ExamplePort` is a reference — copy `example_port.py` per real shared operation and delete the
-example once your own ports exist. Drop this whole sub-package if the library has no
+No port is defined yet. Drop this whole sub-package if the library has no
 macro-sections sharing a behavioural contract.
 
 ## `schemas/` vs `contracts/` — the boundary people get wrong

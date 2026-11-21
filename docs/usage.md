@@ -9,33 +9,28 @@ Examples for installing and using this library.
 ## Installation
 
 ```bash
-pip install <package-name>
+pip install opendata-calendars
 ```
 
 Or with Poetry:
 
 ```bash
-poetry add <package-name>
+poetry add opendata-calendars
 ```
 
-With an optional extra, keep the extras identical on both sides:
-
-```bash
-pip install "<package-name>[<extra>]"
-poetry add "<package-name>[<extra>]"
-```
-
-Every `pip install` line has a Poetry twin.
+The package declares no optional extras.
 
 ---
 
 ## Basic usage
 
 ```python
-from <package_name>.main import main
+import opendata_calendars
 
-main()
+print(opendata_calendars.__version__)
 ```
+
+`__version__` is the only public name today. `tests/unit/test_public_api.py` covers this snippet.
 
 ---
 

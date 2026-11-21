@@ -8,22 +8,15 @@ alone — copy it and adjust.
 
 ---
 
-## Recipe: <a common task>
+## Recipe: read the installed version
 
-Briefly describe the problem this recipe solves, then show the smallest working snippet.
-
-```python
-from <project_name> import main
-
-
-# Replace with a real, runnable example of your public API.
-main()
-```
-
-## Recipe: <another task>
-
-Add one `##` section per recipe. Comments in the code should explain **why**, not just what.
+Log which release of the library is running, for example in a bug report.
 
 ```python
-# Replace with a second illustrative example.
+import opendata_calendars
+
+print(opendata_calendars.__version__)
 ```
+
+`tests/unit/test_public_api.py` covers this snippet. Add one `##` section per recipe as the public
+API grows.

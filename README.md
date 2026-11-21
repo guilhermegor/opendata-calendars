@@ -20,12 +20,6 @@
 
 Fetch exchange and bank holiday calendars from their publishers (B3, ANBIMA, FEBRABAN, NASDAQ, US federal), with cache and provenance, returned as purecalendars calendars
 
-<!-- optional section: delete it when the project has no feature list -->
-<!-- slug: features -->
-## Features
-
-- The capabilities users care about, one line each.
-
 <!-- slug: documentation -->
 ## Documentation
 
@@ -52,8 +46,17 @@ runs `poe init` without activating anything.
 <!-- slug: usage -->
 ### Usage
 
-Run the project through its entry points under `src/`; replace this paragraph with the
-commands your users run first.
+```bash
+pip install opendata-calendars
+```
+
+```python
+import opendata_calendars
+
+print(opendata_calendars.__version__)
+```
+
+`__version__` is the only public name today; `tests/unit/test_public_api.py` covers this snippet.
 
 <!-- slug: project-structure -->
 ## Project Structure
@@ -64,7 +67,7 @@ opendata-calendars/
 ├── .specs/         feature specs and backlog trackers
 ├── bin/            gate scripts and helpers
 ├── docs/           published documentation
-├── src/            application code
+├── src/            the opendata_calendars package
 ├── tests/
 │   ├── unit/
 │   └── integration/
@@ -90,7 +93,16 @@ Once the first release's docs deploy has created the `gh-pages` branch, run
 ## Public API
 
 The public surface is whatever the package `__init__.py` lists in `__all__`; everything
-under `_internal/` is private.
+under `_internal/` is private. Today `__all__` is `["__version__"]`.
+
+### API guarantee (1.x)
+
+From 1.0.0, the names in `opendata_calendars.__all__` follow semantic versioning: removing or
+renaming one, or changing its signature or behaviour incompatibly, happens only in a new
+major version. New names and backwards-compatible changes arrive in minor and patch releases.
+Everything under `opendata_calendars._internal`, and any name not in `__all__`, is private and
+may change in any release. The package ships `py.typed`, so its annotations are part of the
+typed API.
 
 <!-- slug: publishing -->
 ## Publishing

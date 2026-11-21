@@ -6,29 +6,26 @@ Public interface for this library.
 
 ---
 
-## Module: `main`
+## Package: `opendata_calendars`
 
-Entry point module. Extend this with your library's public functions.
+`opendata_calendars.__all__` is the whole public surface.
 
-### `main() -> None`
+### `__version__: str`
 
-Runs the library entry point. Replace the body with your top-level logic.
+The installed distribution's version, or `"0.0.0"` when running from a source tree without an
+installed distribution.
 
 ```python
-from <package_name>.main import main
+import opendata_calendars
 
-main()
+print(opendata_calendars.__version__)
 ```
 
 ---
 
 ## Adding new modules
 
-Place new modules under `src/<package_name>/`. Export public symbols from `src/<package_name>/__init__.py` so callers can do:
-
-```python
-from <package_name> import my_function
-```
+Place new modules under `src/opendata_calendars/`. Export public symbols from `src/opendata_calendars/__init__.py` and add them to `__all__`, so callers can do `from opendata_calendars import <name>`.
 
 Follow the one-class-per-file convention: utility functions with no shared state belong at module level, not wrapped in a class.
 
