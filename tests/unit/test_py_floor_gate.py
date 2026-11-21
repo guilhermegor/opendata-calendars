@@ -105,9 +105,29 @@ def test_mypy_rejects_post_floor_stdlib_name(tmp_path: Path) -> None:
     assert "has no attribute" in _mypy_stdout(path_fixture, tmp_path, [])
 
 
+def _fixture_for(str_floor: str, tmp_path: Path) -> Path:
+    """Write the module importing the first name added after ``str_floor``.
+
+    Parameters
+    ----------
+    str_floor : str
+        A floor the table has a fixture import for.
+    tmp_path : pathlib.Path
+        Disposable directory holding the fixture module.
+
+    Returns
+    -------
+    pathlib.Path
+        The written fixture module.
+    """
+    path_fixture = tmp_path / "uses_post_floor_name.py"
+    path_fixture.write_text(f"{_import_after(str_floor)}\n", encoding="utf-8")
+    return path_fixture
+
+
 @pytest.mark.parametrize("str_floor", list(_DICT_FIRST_NAME_AFTER_FLOOR))
-def test_each_table_name_is_new_after_its_floor(str_floor: str, tmp_path: Path) -> None:
-    """Every table entry must fail on its own floor and resolve one minor later.
+def test_each_table_name_is_missing_on_its_floor(str_floor: str, tmp_path: Path) -> None:
+    """Every table entry must fail on its own floor.
 
     Parameters
     ----------
@@ -116,12 +136,29 @@ def test_each_table_name_is_new_after_its_floor(str_floor: str, tmp_path: Path) 
     tmp_path : pathlib.Path
         Disposable directory holding the fixture module and the mypy cache.
     """
-    path_fixture = tmp_path / "uses_post_floor_name.py"
-    path_fixture.write_text(f"{_import_after(str_floor)}\n", encoding="utf-8")
-    str_next = f"3.{int(str_floor.split('.')[1]) + 1}"
+    path_fixture = _fixture_for(str_floor, tmp_path)
+
     assert "has no attribute" in _mypy_stdout(
         path_fixture, tmp_path, ["--python-version", str_floor]
     )
+
+
+@pytest.mark.parametrize("str_floor", list(_DICT_FIRST_NAME_AFTER_FLOOR))
+def test_each_table_name_resolves_one_minor_after_its_floor(
+    str_floor: str, tmp_path: Path
+) -> None:
+    """Every table entry must resolve one minor version later.
+
+    Parameters
+    ----------
+    str_floor : str
+        A floor the table has a fixture import for.
+    tmp_path : pathlib.Path
+        Disposable directory holding the fixture module and the mypy cache.
+    """
+    path_fixture = _fixture_for(str_floor, tmp_path)
+    str_next = f"3.{int(str_floor.split('.')[1]) + 1}"
+
     assert "Success" in _mypy_stdout(path_fixture, tmp_path, ["--python-version", str_next])
 
 

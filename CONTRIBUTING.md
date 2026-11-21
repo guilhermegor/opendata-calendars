@@ -213,3 +213,11 @@ that PR goes red after each branch update through no fault of its own.
 - **Communicate early** - if you're stuck or need clarification
 
 We appreciate your contributions and look forward to collaborating with you!
+
+## Quality gates
+
+The commit hooks and the `Run Tests` workflow enforce one rule per gate: all-exports completeness,
+complexity ceiling, function length, one assertion per unit test, fixture scope, coverage floor,
+comment budget and English-only comments (assertion weakening and gate integrity run on PRs).
+Each gate and how to run it is listed in `bin/AGENTS.md`; a failing gate is a finding to fix,
+never a threshold to raise.
