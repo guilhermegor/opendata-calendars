@@ -31,5 +31,11 @@ See the `python = "..."` constraint in `pyproject.toml`; CI runs the test matrix
 
 ## How is the version determined?
 
-The version is the **git tag** (via poetry-dynamic-versioning); `pyproject.toml` holds a `0.0.0`
-placeholder. Cut a release from the release workflow — see [Contributing](contributing.md).
+`pyproject.toml` holds a static `version`, set to the version being released. See
+[Contributing](contributing.md).
+
+## Where do the offline calendars live?
+
+In `purecalendars`, which computes holidays without any network access. This package is the
+live counterpart: it fetches the publisher pages and `bin/check_calendar_drift.py` compares the
+two.

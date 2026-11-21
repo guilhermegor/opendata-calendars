@@ -8,18 +8,35 @@ Public interface for this library.
 
 ## Package: `opendata_calendars`
 
-`opendata_calendars.__all__` is the whole public surface.
+The public surface is the `__all__` of `opendata_calendars`, `opendata_calendars.br` and
+`opendata_calendars.us`.
 
 ### `__version__: str`
 
 The installed distribution's version, or `"0.0.0"` when running from a source tree without an
 installed distribution.
 
-```python
-import opendata_calendars
+---
 
-print(opendata_calendars.__version__)
-```
+## Package: `opendata_calendars.br`
+
+| Class | Source |
+|-------|--------|
+| `DatesBRAnbimaWeb` | ANBIMA national holidays workbook |
+| `DatesBRB3Web` | B3 trading calendar page |
+| `DatesBRFebrabanWeb` | FEBRABAN banking holidays endpoint |
+
+## Package: `opendata_calendars.us`
+
+| Class | Source |
+|-------|--------|
+| `DatesUSFederalHolidaysWeb` | federalholidays.net, scraped with Playwright (`web` extra) |
+| `DatesUSNasdaq` | Nasdaq market holidays page |
+
+Each class is a `purecalendars` calendar: `holidays()`, `is_working_day()` and the rest of the
+business-day arithmetic come from that package. The constructors take `bool_persist_cache`,
+`bool_reuse_cache`, `int_days_cache_expiration`, `int_cache_ttl_days`, `path_cache_dir` and
+`logger`.
 
 ---
 

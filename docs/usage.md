@@ -18,19 +18,35 @@ Or with Poetry:
 poetry add opendata-calendars
 ```
 
-The package declares no optional extras.
+The federal-holidays scrape drives a browser, so it needs the `web` extra:
+
+```bash
+pip install "opendata-calendars[web]"
+playwright install chromium
+```
 
 ---
 
 ## Basic usage
 
 ```python
-import opendata_calendars
+from datetime import date
 
-print(opendata_calendars.__version__)
+from opendata_calendars.br import DatesBRB3Web
+
+cls_calendar = DatesBRB3Web()
+print(cls_calendar.holidays()[:3])
+print(cls_calendar.is_working_day(date(2026, 12, 24)))
 ```
 
-`__version__` is the only public name today. `tests/unit/test_public_api.py` covers this snippet.
+Every provider is a `purecalendars` calendar whose holiday list comes from the publisher's own
+page: B3, ANBIMA and FEBRABAN in `opendata_calendars.br`, Nasdaq and the US federal holidays in
+`opendata_calendars.us`. The page is cached on disk under `opendata_calendars_cache` (the home
+cache directory, or `%APPDATA%` on Windows); pass `path_cache_dir` to choose another one and
+`bool_persist_cache=False` to keep it in memory only.
+
+The providers build on the private calendar base of `purecalendars`, so the dependency is pinned
+below its next major version.
 
 ---
 

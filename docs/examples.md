@@ -8,15 +8,35 @@ alone — copy it and adjust.
 
 ---
 
-## Recipe: read the installed version
+## Recipe: business days from the ANBIMA calendar
 
-Log which release of the library is running, for example in a bug report.
+Count the working days between two dates with the table ANBIMA publishes.
+
+```python
+from datetime import date
+
+from opendata_calendars.br import DatesBRAnbimaWeb
+
+cls_calendar = DatesBRAnbimaWeb()
+print(cls_calendar.holidays()[0])
+print(cls_calendar.is_working_day(date(2026, 4, 21)))
+```
+
+## Recipe: keep the fetch in memory
+
+Skip the disk cache, for example in a short-lived job.
+
+```python
+from opendata_calendars.us import DatesUSNasdaq
+
+cls_calendar = DatesUSNasdaq(bool_persist_cache=False)
+print(cls_calendar.holidays()[0])
+```
+
+## Recipe: read the installed version
 
 ```python
 import opendata_calendars
 
 print(opendata_calendars.__version__)
 ```
-
-`tests/unit/test_public_api.py` covers this snippet. Add one `##` section per recipe as the public
-API grows.
