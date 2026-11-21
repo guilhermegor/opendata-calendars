@@ -1,7 +1,8 @@
 """Cache manager for caching expensive data fetches.
 
 This module provides a class for caching method results in memory and optionally persisting
-them to a file using pickle serialization.
+them to a JSON file (data only, never pickle). Cache files written by older
+versions as ``.pkl`` are ignored and never unpickled.
 
 Example
 -------
@@ -26,7 +27,7 @@ class DataProcessor:
     def fetch_data(self) -> pd.DataFrame:
         return pd.DataFrame({"data": [1, 2, 3]})
 
-processor = DataProcessor(cache_dir="/tmp/cache")
+processor = DataProcessor()
 df_ = processor.fetch_data()
 df_cached = processor.fetch_data()
 ```
@@ -35,10 +36,10 @@ df_cached = processor.fetch_data()
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from functools import wraps
+import json
 from logging import Logger
 import os
 from pathlib import Path
-import pickle  # noqa: S403 — the cache reads back only files this process wrote itself
 import platform
 from typing import Any
 
@@ -136,7 +137,7 @@ class CacheManager(metaclass=TypeChecker):
             path_resolved = Path(os.getenv("APPDATA", "")) / "opendata_calendars_cache"
         else:
             path_resolved = Path.home() / ".cache" / "opendata_calendars_cache"
-        path_resolved.mkdir(parents=True, exist_ok=True)
+        path_resolved.mkdir(mode=0o700, parents=True, exist_ok=True)
         return path_resolved
 
     @staticmethod
@@ -285,15 +286,13 @@ class CacheManager(metaclass=TypeChecker):
         path_cache_file = self._get_cache_file_path(key)
         if path_cache_file.exists():  # complexity-ok: ported verbatim
             try:
-                with open(path_cache_file, "rb") as f:
-                    cache_data = pickle.load(f)  # noqa: S301 (trusted, self-written cache)
-                datetime_creation, df_ = cache_data
+                datetime_creation, df_ = self._read_cache_file(path_cache_file)
                 if datetime.now() - datetime_creation < self.timedelta_cache_expiry:
                     if self._validate_cached_dataframe(df_):
                         return df_
                 else:
                     path_cache_file.unlink()
-            except (pickle.PickleError, EOFError, FileNotFoundError, ValueError, TypeError) as err:
+            except (EOFError, FileNotFoundError, ValueError, TypeError, KeyError) as err:
                 self.cls_log_emitter.log_message(
                     f"Discarding unreadable cache file {path_cache_file}: {err}",
                     "warning",
@@ -316,7 +315,53 @@ class CacheManager(metaclass=TypeChecker):
                 Path to the cache file
         """
         safe_key = "".join(c if c.isalnum() else "_" for c in key)
-        return self._path_cache_dir / f"{safe_key}.pkl"
+        return self._path_cache_dir / f"{safe_key}.json"
+
+    @staticmethod
+    def _write_cache_file(
+        path_cache_file: Path, datetime_creation: datetime, df_: pd.DataFrame
+    ) -> None:
+        """Write a DataFrame and its creation timestamp to one JSON file.
+
+        Parameters
+        ----------
+        path_cache_file : Path
+                Destination file
+        datetime_creation : datetime
+                Creation timestamp stored alongside the frame
+        df_ : pd.DataFrame
+                DataFrame to store
+
+        Returns
+        -------
+        None
+        """
+        payload = {
+            "created": datetime_creation.isoformat(),
+            "dtypes": {str(col): str(dtype) for col, dtype in df_.dtypes.items()},
+            "frame": json.loads(df_.to_json(orient="split", date_format="iso")),
+        }
+        path_cache_file.write_text(json.dumps(payload), encoding="utf-8")
+
+    @staticmethod
+    def _read_cache_file(path_cache_file: Path) -> tuple[datetime, pd.DataFrame]:
+        """Read the creation timestamp and DataFrame from a JSON cache file.
+
+        Parameters
+        ----------
+        path_cache_file : Path
+                Source file
+
+        Returns
+        -------
+        tuple[datetime, pd.DataFrame]
+                Creation timestamp and the stored frame
+        """
+        payload = json.loads(path_cache_file.read_text(encoding="utf-8"))
+        frame = payload["frame"]
+        df_ = pd.DataFrame(frame["data"], index=frame["index"], columns=frame["columns"])
+        df_ = df_.astype(payload["dtypes"])
+        return datetime.fromisoformat(payload["created"]), df_
 
     def _validate_cached_dataframe(
         self, df_: pd.DataFrame
@@ -369,8 +414,7 @@ class CacheManager(metaclass=TypeChecker):
             if self.bool_persist_cache:
                 path_cache_file = self._get_cache_file_path(key)
                 try:
-                    with open(path_cache_file, "wb") as f:
-                        pickle.dump((datetime.now(), df_), f)
+                    self._write_cache_file(path_cache_file, datetime.now(), df_)
                 except Exception as err:
                     raise ValueError(
                         f"Warning: Failed to save cache to {path_cache_file}: {err}"
@@ -393,13 +437,12 @@ class CacheManager(metaclass=TypeChecker):
         if not self.bool_persist_cache:
             return
         datetime_now = datetime.now()
-        for cache_file in self._path_cache_dir.glob("*.pkl"):
+        for cache_file in self._path_cache_dir.glob("*.json"):
             try:
-                with open(cache_file, "rb") as f:
-                    datetime_creation, _ = pickle.load(f)  # noqa: S301 (trusted, self-written cache)
+                datetime_creation, _ = self._read_cache_file(cache_file)
                 if datetime_now - datetime_creation > self.timedelta_cache_ttl_days:
                     cache_file.unlink()
-            except (pickle.PickleError, EOFError, FileNotFoundError) as err:
+            except (ValueError, TypeError, KeyError, FileNotFoundError) as err:
                 cache_file.unlink(missing_ok=True)
                 raise ValueError(
                     f"Warning: Failed to load cache from {cache_file}: {err}"
@@ -421,7 +464,7 @@ class CacheManager(metaclass=TypeChecker):
         """
         self._cache.clear()
         if self.bool_persist_cache:
-            for cache_file in self._path_cache_dir.glob("*.pkl"):
+            for cache_file in self._path_cache_dir.glob("*.json"):
                 try:
                     cache_file.unlink()
                 except Exception as err:
