@@ -291,3 +291,24 @@ bash -n bin/*.sh bin/lib/*.sh
 `SC1091` (can't follow sourced file) is excluded globally because scripts
 source siblings at runtime paths shellcheck cannot resolve. Any other
 `# shellcheck disable=` must be line-scoped and carry a one-line reason comment.
+
+## Quality and comment-discipline gates
+
+One line each: what it enforces, how to run it. Every gate except `check_dead_code.py` is a
+pre-commit hook. Every gate except `check_dead_code.py` and the PR-only ones is a `tests.yml`
+step. `check_dead_code.py` is not wired into either. Run any of them with
+`poetry run python bin/<name>.py` (`bash bin/check_complexity.sh` for the shell one).
+
+| Gate | Enforces |
+|---|---|
+| `check_all_exports.py` | every public name is in its package `__all__`; no `_internal` name is exported |
+| `check_assertion_weakening.py` | a PR cannot delete or weaken a test assertion without a stated reason (PR-only: skips on `main`) |
+| `check_complexity.sh` | cyclomatic-complexity ceiling per tree (tests 1, src 2, bin 8) |
+| `check_coverage_floor.py` | `.coveragerc` `omit` cannot swallow a capability that must stay covered |
+| `check_dead_code.py` | vulture dead-code scan; skips with a note until `vulture` is a dev dependency (not wired in the template either) |
+| `check_fixture_scope.py` | a mutable fixture is not widened past function scope |
+| `check_function_length.py` | a function body stays within 60 lines of code |
+| `check_gate_integrity.py` | a PR cannot loosen a gate's own config (ruff, mypy, hooks) (PR-only) |
+| `check_one_assert.py` | one assertion site per unit test; `# one-assert-ok: <reason>` exempts one |
+| `check_comment_budget.py` | comment density ratchet against `comment_budget_baseline.txt`; `--require-baseline` in CI |
+| `check_comment_language.py` | comments and docs are English only |

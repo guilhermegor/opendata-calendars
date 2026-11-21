@@ -2681,6 +2681,15 @@ def test_later_ladder_comment_with_findings_supersedes_an_earlier_clean_one() ->
         "createdAt": "2099-02-01T00:00:00Z",
     }
     assert _missing_with([_marker_comment("OWNER"), dict_later], _TUPLE_MARKERS) is not None
+
+
+def test_later_ladder_comment_with_findings_supersedes_regardless_of_list_order() -> None:
+    """The decision follows ``createdAt``, not the position in the fetched list."""
+    dict_later = {
+        **_marker_comment("OWNER"),
+        "body": f"{_MARKER}\nReviewed head: {_HEAD}\n\n2 finding(s) across 3 reviewed file(s).",
+        "createdAt": "2099-02-01T00:00:00Z",
+    }
     assert _missing_with([dict_later, _marker_comment("OWNER")], _TUPLE_MARKERS) is not None
 
 
@@ -3931,6 +3940,11 @@ def test_query_asks_for_the_creation_time_of_both_retarget_events() -> None:
     """The carry-forward needs ``createdAt`` on the manual and the automatic event alike."""
     str_query = _load_gate()._QUERY
     assert "... on BaseRefChangedEvent { createdAt }" in str_query
+
+
+def test_query_asks_for_the_creation_time_of_the_automatic_retarget_event() -> None:
+    """The carry-forward needs ``createdAt`` on the automatic event too."""
+    str_query = _load_gate()._QUERY
     assert "... on AutomaticBaseChangeSucceededEvent { createdAt }" in str_query
 
 
@@ -3992,6 +4006,11 @@ def test_query_reads_both_retarget_event_types() -> None:
     """Manual and automatic retargets both change the base the review was written against."""
     str_query = _load_gate()._QUERY
     assert "BASE_REF_CHANGED_EVENT" in str_query
+
+
+def test_query_reads_the_automatic_retarget_event_type() -> None:
+    """An automatic retarget changes the base the review was written against too."""
+    str_query = _load_gate()._QUERY
     assert "AUTOMATIC_BASE_CHANGE_SUCCEEDED_EVENT" in str_query
 
 
