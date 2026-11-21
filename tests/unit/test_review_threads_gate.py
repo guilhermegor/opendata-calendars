@@ -2681,6 +2681,15 @@ def test_later_ladder_comment_with_findings_supersedes_an_earlier_clean_one() ->
         "createdAt": "2099-02-01T00:00:00Z",
     }
     assert _missing_with([_marker_comment("OWNER"), dict_later], _TUPLE_MARKERS) is not None
+
+
+def test_later_ladder_comment_with_findings_supersedes_regardless_of_list_order() -> None:
+    """The decision follows ``createdAt``, not the position in the fetched list."""
+    dict_later = {
+        **_marker_comment("OWNER"),
+        "body": f"{_MARKER}\nReviewed head: {_HEAD}\n\n2 finding(s) across 3 reviewed file(s).",
+        "createdAt": "2099-02-01T00:00:00Z",
+    }
     assert _missing_with([dict_later, _marker_comment("OWNER")], _TUPLE_MARKERS) is not None
 
 
@@ -3927,11 +3936,22 @@ def test_reviewed_before_base_change_ignores_a_reply_only_review_after_the_chang
     )
 
 
-def test_query_asks_for_the_creation_time_of_both_retarget_events() -> None:
-    """The carry-forward needs ``createdAt`` on the manual and the automatic event alike."""
-    str_query = _load_gate()._QUERY
-    assert "... on BaseRefChangedEvent { createdAt }" in str_query
-    assert "... on AutomaticBaseChangeSucceededEvent { createdAt }" in str_query
+@pytest.mark.parametrize(
+    "str_fragment",
+    [
+        "... on BaseRefChangedEvent { createdAt }",
+        "... on AutomaticBaseChangeSucceededEvent { createdAt }",
+    ],
+)
+def test_query_asks_for_the_creation_time_of_both_retarget_events(str_fragment: str) -> None:
+    """The carry-forward needs ``createdAt`` on the manual and the automatic event alike.
+
+    Parameters
+    ----------
+    str_fragment : str
+        The selection the query must carry for one retarget event type.
+    """
+    assert str_fragment in _load_gate()._QUERY
 
 
 def test_review_carried_forward_long_review_list_makes_at_most_cap_plus_one_calls() -> None:
@@ -3988,11 +4008,18 @@ def test_fetch_pull_request_keeps_timeline_items_across_pages(
     assert dict_pr["timelineItems"]["nodes"]
 
 
-def test_query_reads_both_retarget_event_types() -> None:
-    """Manual and automatic retargets both change the base the review was written against."""
-    str_query = _load_gate()._QUERY
-    assert "BASE_REF_CHANGED_EVENT" in str_query
-    assert "AUTOMATIC_BASE_CHANGE_SUCCEEDED_EVENT" in str_query
+@pytest.mark.parametrize(
+    "str_event_type", ["BASE_REF_CHANGED_EVENT", "AUTOMATIC_BASE_CHANGE_SUCCEEDED_EVENT"]
+)
+def test_query_reads_both_retarget_event_types(str_event_type: str) -> None:
+    """Manual and automatic retargets both change the base the review was written against.
+
+    Parameters
+    ----------
+    str_event_type : str
+        One retarget event type the query must filter on.
+    """
+    assert str_event_type in _load_gate()._QUERY
 
 
 @pytest.mark.parametrize(
