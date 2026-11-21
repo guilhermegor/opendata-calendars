@@ -11,12 +11,18 @@ src_prefix_marker: _internal
 
 layers:
   __root__:
-    allow: {}
+    allow:
+      purecalendars: "the calendar core every live provider subclasses; the package exists to serve it"
+      requests: "HTTP fetch of the publisher pages, one call per provider"
+      lxml: "typed HTML elements handed back by the shared HTML parser"
+      pandas: "providers build and validate the holiday frames they return"
 
   utils:
     allow:
       pandas: "the seam layer owns the pandas surface (frames, dtypes, tabular_reader)"
-      wwdates: "BR business-day calendar, wrapped by utils.dates"
+      purecalendars: "BR business-day calendar core"
+      lxml: "HTML parsing, wrapped by utils.parsers.html"
+      playwright: "browser scraping, wrapped by utils.webdriver_tools.playwright_wd"
       win32com: "Outlook COM automation, wrapped by utils.ms_office.outlook_gateway (Windows only)"
       requests: "HTTP transport, wrapped by utils.http_downloader"
       urllib3: "retry/backoff policy used by the download seam"
