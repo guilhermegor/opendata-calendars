@@ -1049,6 +1049,41 @@ def test_cache_round_trip_preserves_frame_and_timestamp(
     pd.testing.assert_frame_equal(df_back, df_)
 
 
+@pytest.mark.parametrize(
+    "df_",
+    [
+        pd.DataFrame({0: [1, 2], 1: ["a", "b"]}),
+        pd.DataFrame({"updated_at": pd.to_datetime(["2026-01-01 10:00:00.123456"], utc=True)}),
+        pd.DataFrame({"v": [1]}, index=pd.DatetimeIndex(["2026-01-02"], name="day")),
+    ],
+    ids=["integer-column-labels", "microsecond-timestamps", "named-datetime-index"],
+)
+def test_cache_round_trip_preserves_labels_precision_and_index(
+    cache_manager_custom: CacheManager, df_: pd.DataFrame
+) -> None:
+    """Test frames that broke the first JSON format survive a disk round trip.
+
+    Verifies
+    --------
+    - Integer column labels, microsecond timestamps and a named DatetimeIndex
+      read back equal to what was written
+
+    Parameters
+    ----------
+    cache_manager_custom : CacheManager
+            CacheManager instance with custom settings
+    df_ : pd.DataFrame
+            Frame to round-trip
+
+    Returns
+    -------
+    None
+    """
+    path_file = cache_manager_custom._get_cache_file_path("round_trip_shapes")
+    CacheManager._write_cache_file(path_file, datetime(2026, 1, 2), df_)
+    pd.testing.assert_frame_equal(CacheManager._read_cache_file(path_file)[1], df_)
+
+
 def test_stray_pkl_is_never_loaded(
     cache_manager_custom: CacheManager, sample_dataframe: pd.DataFrame
 ) -> None:

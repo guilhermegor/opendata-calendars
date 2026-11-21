@@ -338,8 +338,10 @@ class CacheManager(metaclass=TypeChecker):
         """
         payload = {
             "created": datetime_creation.isoformat(),
-            "dtypes": {str(col): str(dtype) for col, dtype in df_.dtypes.items()},
-            "frame": json.loads(df_.to_json(orient="split", date_format="iso")),
+            "dtypes": [str(dtype) for dtype in df_.dtypes],
+            "index_dtype": str(df_.index.dtype),
+            "index_name": df_.index.name,
+            "frame": json.loads(df_.to_json(orient="split", date_format="iso", date_unit="ns")),
         }
         path_cache_file.write_text(json.dumps(payload), encoding="utf-8")
 
@@ -359,8 +361,11 @@ class CacheManager(metaclass=TypeChecker):
         """
         payload = json.loads(path_cache_file.read_text(encoding="utf-8"))
         frame = payload["frame"]
-        df_ = pd.DataFrame(frame["data"], index=frame["index"], columns=frame["columns"])
-        df_ = df_.astype(payload["dtypes"])
+        index_ = pd.Index(frame["index"], name=payload["index_name"]).astype(
+            payload["index_dtype"]
+        )
+        df_ = pd.DataFrame(frame["data"], index=index_, columns=frame["columns"])
+        df_ = df_.astype(dict(zip(df_.columns, payload["dtypes"], strict=True)))
         return datetime.fromisoformat(payload["created"]), df_
 
     def _validate_cached_dataframe(
