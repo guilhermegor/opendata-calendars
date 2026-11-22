@@ -1112,3 +1112,130 @@ def test_stray_pkl_is_never_loaded(
     cache_manager_custom._clean_old_cache()
     cache_manager_custom.clear_caches()
     assert stray.exists()
+
+
+def test_load_cache_in_memory_expired_is_a_miss(
+    cache_manager_custom: CacheManager, sample_dataframe: pd.DataFrame
+) -> None:
+    """Test an in-memory entry older than the expiry is not served.
+
+    Verifies
+    --------
+    - A stale in-memory entry returns None when persistence is off
+
+    Parameters
+    ----------
+    cache_manager_custom : CacheManager
+            CacheManager instance with custom settings
+    sample_dataframe : pd.DataFrame
+            Sample DataFrame for testing
+
+    Returns
+    -------
+    None
+    """
+    cache_manager_custom.bool_persist_cache = False
+    cache_manager_custom._cache["old"] = sample_dataframe
+    cache_manager_custom._cache_created["old"] = datetime.now() - timedelta(days=400)
+    assert cache_manager_custom._load_cache("old") is None
+
+
+def test_save_cache_write_failure_is_logged_not_raised(
+    cache_manager_custom: CacheManager,
+    sample_dataframe: pd.DataFrame,
+    mocker: MockerFixture,
+) -> None:
+    """Test a failed disk write does not abort the caller.
+
+    Verifies
+    --------
+    - The failure is logged as a warning and the frame stays in memory
+
+    Parameters
+    ----------
+    cache_manager_custom : CacheManager
+            CacheManager instance with custom settings
+    sample_dataframe : pd.DataFrame
+            Sample DataFrame for testing
+    mocker : MockerFixture
+            Pytest-mock fixture for creating mocks
+
+    Returns
+    -------
+    None
+    """
+    mocker.patch.object(CacheManager, "_write_cache_file", side_effect=PermissionError("ro"))
+    spy_log = mocker.spy(cache_manager_custom.cls_log_emitter, "log_message")
+    cache_manager_custom._save_cache("key", sample_dataframe)
+    assert (spy_log.call_args.args[1], "key" in cache_manager_custom._cache) == ("warning", True)
+
+
+def test_clean_old_cache_corrupt_file_is_removed_not_raised(
+    cache_manager_custom: CacheManager,
+) -> None:
+    """Test a corrupt cache file is deleted without raising.
+
+    Verifies
+    --------
+    - The corrupt file is gone after cleaning
+
+    Parameters
+    ----------
+    cache_manager_custom : CacheManager
+            CacheManager instance with custom settings
+
+    Returns
+    -------
+    None
+    """
+    path_bad = cache_manager_custom._get_cache_file_path("bad")
+    path_bad.write_text("{not json", encoding="utf-8")
+    cache_manager_custom._clean_old_cache()
+    assert not path_bad.exists()
+
+
+def test_init_without_persistence_creates_no_directory(
+    tmp_path: Path,
+) -> None:
+    """Test an in-memory manager does not touch the disk.
+
+    Verifies
+    --------
+    - The cache directory is not created when persistence is off
+
+    Parameters
+    ----------
+    tmp_path : Path
+            Temporary directory path for testing
+
+    Returns
+    -------
+    None
+    """
+    path_dir = tmp_path / "never_created"
+    CacheManager(bool_persist_cache=False, path_cache_dir=str(path_dir))
+    assert not path_dir.exists()
+
+
+def test_cache_round_trip_preserves_provider_shaped_frame(
+    cache_manager_custom: CacheManager,
+) -> None:
+    """Test the raw frames providers cache (strings and ints) survive a round trip.
+
+    Verifies
+    --------
+    - Object-dtype string dates and integer years read back equal
+
+    Parameters
+    ----------
+    cache_manager_custom : CacheManager
+            CacheManager instance with custom settings
+
+    Returns
+    -------
+    None
+    """
+    df_ = pd.DataFrame({"DATE": ["01/01/2026", "25/12/2026"], "ANO": [2026, 2026]})
+    path_file = cache_manager_custom._get_cache_file_path("provider_shape")
+    CacheManager._write_cache_file(path_file, datetime(2026, 1, 2), df_)
+    pd.testing.assert_frame_equal(CacheManager._read_cache_file(path_file)[1], df_)

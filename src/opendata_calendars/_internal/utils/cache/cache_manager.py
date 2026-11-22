@@ -102,7 +102,8 @@ class CacheManager(metaclass=TypeChecker):
 
         Notes
         -----
-        [1] The cache directory is created if it does not exist
+        [1] The cache directory is created if it does not exist, but only when
+            ``bool_persist_cache`` is True; an in-memory manager touches no disk
         [2] TTL stands for time-to-live, or retention time period for a given resource
         """
         self.bool_persist_cache = bool_persist_cache
@@ -112,12 +113,13 @@ class CacheManager(metaclass=TypeChecker):
             cls_log_emitter if cls_log_emitter is not None else LogsEmitter(logger)
         )
         self._cache: dict[str, pd.DataFrame] = {}
-        self._path_cache_dir = self._get_cache_dir_path(path_cache_dir)
+        self._cache_created: dict[str, datetime] = {}
+        self._path_cache_dir = self._get_cache_dir_path(path_cache_dir, bool_persist_cache)
         self.timedelta_cache_expiry = timedelta(days=int_days_cache_expiration)
         self.timedelta_cache_ttl_days = timedelta(days=int_cache_ttl_days)
 
     def _get_cache_dir_path(
-        self, path_cache_dir: str | None
+        self, path_cache_dir: str | None, bool_create: bool = True
     ) -> Path:  # complexity-ok: ported verbatim
         """Get the path to the cache directory.
 
@@ -125,6 +127,8 @@ class CacheManager(metaclass=TypeChecker):
         ----------
         path_cache_dir : Optional[str]
                 Path to the cache directory
+        bool_create : bool
+                If True, create the directory when missing (default: True)
 
         Returns
         -------
@@ -134,10 +138,12 @@ class CacheManager(metaclass=TypeChecker):
         if path_cache_dir:
             path_resolved = Path(path_cache_dir)
         elif platform.system() == "Windows":
-            path_resolved = Path(os.getenv("APPDATA", "")) / "opendata_calendars_cache"
+            path_appdata = Path(os.getenv("APPDATA") or Path.home() / "AppData" / "Roaming")
+            path_resolved = path_appdata / "opendata_calendars_cache"
         else:
             path_resolved = Path.home() / ".cache" / "opendata_calendars_cache"
-        path_resolved.mkdir(mode=0o700, parents=True, exist_ok=True)
+        if bool_create:
+            path_resolved.mkdir(mode=0o700, parents=True, exist_ok=True)
         return path_resolved
 
     @staticmethod
@@ -277,7 +283,12 @@ class CacheManager(metaclass=TypeChecker):
         """
         if self.bool_reuse_cache:
             df_cached = self._cache.get(key)
-            if df_cached is not None and self._validate_cached_dataframe(df_cached):
+            datetime_created = self._cache_created.get(key)
+            bool_fresh = (
+                datetime_created is None
+                or datetime.now() - datetime_created < self.timedelta_cache_expiry
+            )
+            if bool_fresh and df_cached is not None and self._validate_cached_dataframe(df_cached):
                 return df_cached
 
         if not self.bool_persist_cache:
@@ -292,7 +303,7 @@ class CacheManager(metaclass=TypeChecker):
                         return df_
                 else:
                     path_cache_file.unlink()
-            except (EOFError, FileNotFoundError, ValueError, TypeError, KeyError) as err:
+            except (EOFError, ValueError, TypeError, KeyError, OSError) as err:
                 self.cls_log_emitter.log_message(
                     f"Discarding unreadable cache file {path_cache_file}: {err}",
                     "warning",
@@ -409,21 +420,24 @@ class CacheManager(metaclass=TypeChecker):
         -------
         None
 
-        Raises
-        ------
-        ValueError
-                If there is an error saving the cache
+        Notes
+        -----
+        A failed disk write is logged and swallowed: the cache is an optimisation, and the
+        caller already holds the fetched frame.
         """
         if self._validate_cached_dataframe(df_):  # complexity-ok: ported verbatim
+            datetime_now = datetime.now()
             self._cache[key] = df_
+            self._cache_created[key] = datetime_now
             if self.bool_persist_cache:
                 path_cache_file = self._get_cache_file_path(key)
                 try:
-                    self._write_cache_file(path_cache_file, datetime.now(), df_)
-                except Exception as err:
-                    raise ValueError(
-                        f"Warning: Failed to save cache to {path_cache_file}: {err}"
-                    ) from err
+                    path_cache_file.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+                    self._write_cache_file(path_cache_file, datetime_now, df_)
+                except OSError as err:
+                    self.cls_log_emitter.log_message(
+                        f"Failed to save cache to {path_cache_file}: {err}", "warning"
+                    )
 
     def _clean_old_cache(  # complexity-ok: ported verbatim
         self,
@@ -434,10 +448,10 @@ class CacheManager(metaclass=TypeChecker):
         -------
         None
 
-        Raises
-        ------
-        ValueError
-                If there is an error cleaning the cache
+        Notes
+        -----
+        An unreadable file is logged and removed, never raised: cleaning runs after a
+        successful fetch and must not discard its result.
         """
         if not self.bool_persist_cache:
             return
@@ -447,11 +461,11 @@ class CacheManager(metaclass=TypeChecker):
                 datetime_creation, _ = self._read_cache_file(cache_file)
                 if datetime_now - datetime_creation > self.timedelta_cache_ttl_days:
                     cache_file.unlink()
-            except (ValueError, TypeError, KeyError, FileNotFoundError) as err:
+            except (ValueError, TypeError, KeyError, OSError) as err:
+                self.cls_log_emitter.log_message(
+                    f"Removing unreadable cache file {cache_file}: {err}", "warning"
+                )
                 cache_file.unlink(missing_ok=True)
-                raise ValueError(
-                    f"Warning: Failed to load cache from {cache_file}: {err}"
-                ) from err
 
     def clear_caches(  # complexity-ok: ported verbatim
         self,
@@ -468,6 +482,7 @@ class CacheManager(metaclass=TypeChecker):
                 If there is an error clearing the cache
         """
         self._cache.clear()
+        self._cache_created.clear()
         if self.bool_persist_cache:
             for cache_file in self._path_cache_dir.glob("*.json"):
                 try:
