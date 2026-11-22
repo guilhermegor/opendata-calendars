@@ -31,8 +31,8 @@ See the `python = "..."` constraint in `pyproject.toml`; CI runs the test matrix
 
 ## How is the version determined?
 
-`pyproject.toml` holds a static `version`, set to the version being released. See
-[Contributing](contributing.md).
+The version comes from the latest git tag `vX.Y.Z`, through `poetry-dynamic-versioning`;
+`pyproject.toml` keeps only a placeholder. See [Contributing](contributing.md#releasing).
 
 ## Where do the offline calendars live?
 

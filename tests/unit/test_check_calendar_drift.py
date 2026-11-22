@@ -461,6 +461,7 @@ def test_main_opens_an_issue_when_there_is_real_drift(
     list_calls = []
     monkeypatch.setattr(drift, "collect_drift", lambda: (["b3: diverged"], []))
     monkeypatch.setattr(drift, "upsert_issue", lambda *args: list_calls.append(args))
+    monkeypatch.setenv("GITHUB_TOKEN", "token")
     monkeypatch.setenv("GITHUB_REPOSITORY", "guilhermegor/opendata-calendars")
     assert drift.main() == 0
     assert len(list_calls) == 1
@@ -541,7 +542,7 @@ def test_upsert_issue_updates_in_place_when_one_exists(
     """An existing tracker -> one PATCH to that issue, and NO second issue opened.
 
     This is the dedupe the ledger flagged as most likely to be wrong: a broken marker match
-    would open a fresh issue on every weekly run.
+    would open a fresh issue on every run.
 
     Parameters
     ----------
@@ -632,3 +633,22 @@ def test_upsert_issue_surfaces_errors_alongside_problems(
 
     str_body = next(c[2]["body"] for c in list_calls if c[0] == "POST")
     assert "us: unreachable" in str_body
+
+
+def test_check_pair_empty_web_source_is_a_read_failure(drift: ModuleType) -> None:
+    """A scrape that matches nothing must not read as agreement."""
+    cls_pair = _pair(drift, "br.b3", [("Confraternização", date(2026, 1, 1))], [])
+    with pytest.raises(ValueError, match="no holidays"):
+        drift.check_pair(cls_pair)
+
+
+def test_main_without_a_token_files_no_issue(
+    drift: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A missing token skips the issue instead of crashing the run."""
+    list_calls = []
+    monkeypatch.setattr(drift, "collect_drift", lambda: (["b3: diverged"], []))
+    monkeypatch.setattr(drift, "upsert_issue", lambda *args: list_calls.append(args))
+    monkeypatch.setenv("GITHUB_REPOSITORY", "guilhermegor/opendata-calendars")
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    assert (drift.main(), list_calls) == (0, [])

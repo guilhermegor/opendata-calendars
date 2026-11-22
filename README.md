@@ -64,8 +64,8 @@ Each `*Web` class fetches its publisher's page, caches it on disk under `opendat
 and exposes the business-day arithmetic of `purecalendars`. Brazilian providers live in
 `opendata_calendars.br` (B3, ANBIMA, FEBRABAN), US providers in `opendata_calendars.us` (Nasdaq,
 federal holidays). The federal-holidays scrape needs a browser: install the `web` extra and run
-`playwright install chromium` once. The classes build on the private calendar base of
-`purecalendars`, which is why the dependency is pinned below the next major.
+`playwright install chromium` once. The classes build on the public calendar base of
+`purecalendars` (4.1.0 and later), so the dependency is pinned below the next major.
 
 <!-- slug: project-structure -->
 ## Project Structure

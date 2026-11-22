@@ -1,4 +1,4 @@
-"""Weekly, NON-BLOCKING offline↔web calendar drift detector — issue #12.
+"""NON-BLOCKING offline↔web calendar drift detector.
 
 Compares each offline calendar against the live page its publisher maintains and, on any
 divergence, opens or updates ONE tracking issue. It is deliberately kept OUT of the PR gate and
@@ -11,9 +11,9 @@ the release path:
 Failure here is an OPENED ISSUE, never a failed required check: ``main`` always exits 0, and only
 an unhandled crash reddens the run — a reddened *scheduled* run blocks nothing.
 
-Why a scheduled job at all: the whole library is offline-first, and parity between each offline
-class and its ``*Web`` twin was verified **once, by hand**, in PR #10 (over ANBIMA's full
-2001–2099 span: empty symmetric difference). Nothing at PR time can see B3 adding a closure
+Why a periodic job at all: the whole library is offline-first, and parity between each offline
+class and its ``*Web`` twin was verified **once, by hand** (over ANBIMA's full 2001–2099 span:
+empty symmetric difference). Nothing at PR time can see B3 adding a closure
 *after* we shipped. This is the job that goes back and looks again.
 
 Comparison is on **dates only, never names** — B3 publishes an event feed whose free-text wording
@@ -44,6 +44,7 @@ _ISSUE_LABEL = "calendar-drift"
 _ISSUE_TITLE = "Calendar drift: offline calendars disagree with their live sources"
 
 _INT_FIRST_WEEKEND_WEEKDAY = 5
+_INT_TIMEOUT_SECONDS = 30
 _ISSUE_MARKER = "<!-- opendata-calendars:calendar-drift-tracker -->"
 
 _B3_KNOWN_WEB_ONLY_2021 = frozenset(
@@ -166,13 +167,14 @@ def b3_known_web_only(set_web: set[date]) -> frozenset[date]:
 
     One group now: the 2021 Sao Paulo closures B3 stopped observing afterwards.
 
-    **Christmas Eve used to be excused here and deliberately is not any more** (issue #35). The
-    excuse existed only because ``DatesBRB3`` defaulted to ``bool_add_christmas_eve=False`` while
-    B3 publishes 24 December as a closure in every year it falls on a weekday — so the divergence
-    was real, known, and would have been restated weekly. That default is now ``True``, so both
-    sides agree and there is nothing to excuse. Keeping the excuse would be worse than dead code:
-    it would **suppress real signal** — if B3 ever stops publishing 24 December on a weekday while
-    the offline calendar still adds it, that is exactly what this job should report.
+    **Christmas Eve used to be excused here and deliberately is not any more.** The excuse
+    existed only because ``DatesBRB3`` defaulted to ``bool_add_christmas_eve=False`` while B3
+    publishes 24 December as a closure in every year it falls on a weekday — so the divergence
+    was real, known, and would have been restated on every run. That default is now ``True``, so
+    both sides agree and there is nothing to excuse. Keeping the excuse would be worse than dead
+    code: it would **suppress real signal** — if B3 ever stops publishing 24 December on a
+    weekday while the offline calendar still adds it, that is exactly what this job should
+    report.
 
     A year where 24 December falls on a weekend needs no entry either: the date is then
     offline-only, and the pair's ``bool_offline_only_weekend_ok`` already covers it, because B3
@@ -266,8 +268,16 @@ def check_pair(cls_pair: CalendarPair) -> list[str]:
     -------
     list of str
             The divergence messages for this pair.
+
+    Raises
+    ------
+    ValueError
+            When the live source returns no holidays: a scrape that matches nothing is a read
+            failure, not agreement.
     """
     set_web = {date_ for _, date_ in cls_pair.callable_web().holidays()}
+    if not set_web:
+        raise ValueError("the live source returned no holidays")
     set_offline = {date_ for _, date_ in cls_pair.callable_offline().holidays()}
     set_offline = clamp_to_web_span(set_offline, set_web)
     frozenset_web_only = (
@@ -338,14 +348,14 @@ def build_issue_body(list_problems: list[str], list_errors: list[str]) -> str:
     )
     return (
         f"{_ISSUE_MARKER}\n\n"
-        f"The weekly calendar-drift sweep found **{len(list_problems)}** divergence(s) between "
+        f"The calendar-drift sweep found **{len(list_problems)}** divergence(s) between "
         f"the offline calendars and the pages their publishers serve today.\n\n"
         f"{str_lines}\n"
         f"{str_errors}\n"
         f"Dates are compared **on dates only, never names** — B3 publishes an event feed whose "
         f"wording is not a stable key. Fix the affected calendar (or widen the known-exceptions "
         f"allowlist in `bin/check_calendar_drift.py` if the divergence is expected) and close "
-        f"this issue — the job reopens it if the drift persists.\n"
+        f"this issue — a new one is opened if the drift persists.\n"
     )
 
 
@@ -371,7 +381,7 @@ def _api(str_method: str, str_url: str, dict_body: dict | None = None) -> Any:  
     cls_request.add_header("Authorization", f"Bearer {os.environ['GITHUB_TOKEN']}")
     cls_request.add_header("Accept", "application/vnd.github+json")
     cls_request.add_header("Content-Type", "application/json")
-    with urllib.request.urlopen(cls_request) as cls_response:  # noqa: S310
+    with urllib.request.urlopen(cls_request, timeout=_INT_TIMEOUT_SECONDS) as cls_response:  # noqa: S310
         return json.loads(cls_response.read() or "null")
 
 
@@ -443,7 +453,9 @@ def main() -> int:
         print(f"  - {str_problem}")
 
     str_repo = os.environ.get("GITHUB_REPOSITORY")
-    if str_repo:
+    if str_repo and not os.environ.get("GITHUB_TOKEN"):
+        print("GITHUB_TOKEN is not set: the drift issue was not filed", file=sys.stderr)
+    elif str_repo:
         upsert_issue(f"{_GH_API}/repos/{str_repo}", list_problems, list_errors)
     return 0
 

@@ -160,6 +160,7 @@ summary: run `poe enable_pages` once afterwards.
 
 ## Public API
 
-The public surface is `opendata_calendars.__all__` (today only `__version__`), frozen at 1.0.0:
-removing a name afterwards is a major version. `tests/unit/test_public_api.py` pins it, so adding
-or removing a name means editing that test on purpose.
+The public surface is the `__all__` of `opendata_calendars` (today only `__version__`),
+`opendata_calendars.br` and `opendata_calendars.us`, frozen at 1.0.0: removing a name afterwards
+is a major version. `tests/unit/test_public_api.py` pins all three, so adding or removing a name
+means editing that test on purpose.

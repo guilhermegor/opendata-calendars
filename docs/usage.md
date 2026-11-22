@@ -45,8 +45,8 @@ page: B3, ANBIMA and FEBRABAN in `opendata_calendars.br`, Nasdaq and the US fede
 cache directory, or `%APPDATA%` on Windows); pass `path_cache_dir` to choose another one and
 `bool_persist_cache=False` to keep it in memory only.
 
-The providers build on the private calendar base of `purecalendars`, so the dependency is pinned
-below its next major version.
+The providers build on the public calendar base of `purecalendars` (4.1.0 and later), so the
+dependency is pinned below its next major version.
 
 ---
 
