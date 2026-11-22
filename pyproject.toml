@@ -1,11 +1,11 @@
 [tool.poetry]
 name = "opendata-calendars"
-version = "0.0.1"
+version = "0.0.0"
 description = "Fetch exchange and bank holiday calendars from their publishers (B3, ANBIMA, FEBRABAN, NASDAQ, US federal), with cache and provenance, returned as purecalendars calendars"
 authors = ["guilhermegor"]
 readme = "README.md"
 license = "MIT"
-homepage = "https://example.com/opendata-calendars"
+homepage = "https://github.com/guilhermegor/opendata-calendars"
 repository = "https://github.com/guilhermegor/opendata-calendars"
 keywords = ["opendata-calendars", "python", "library"]
 packages = [{ include = "opendata_calendars", from = "src" }]
@@ -19,7 +19,7 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
     "Operating System :: OS Independent",
     "License :: OSI Approved :: MIT License",
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Topic :: Software Development :: Libraries",
 ]
@@ -30,11 +30,18 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = ">=3.11,<4.0"
+purecalendars = ">=4.1.0,<5"
 beartype = ">=0.22"
 pandas = ">=2.1.0"
 numpy = ">=1.22"
-openpyxl = ">=3.1.0"
+requests = ">=2.32"
+lxml = ">=5.0"
+xlrd = ">=2.0.2"
 defusedxml = ">=0.7"
+playwright = { version = ">=1.40", optional = true }
+
+[tool.poetry.extras]
+web = ["playwright"]
 
 [tool.poetry.group.dev.dependencies]
 poethepoet = ">=0.35"
@@ -57,6 +64,8 @@ yamllint = ">=1.35.0"
 shfmt-py = ">=3.7.0"
 shellcheck-py = ">=0.10.0"
 deptry = ">=0.20"
+lxml-stubs = "^0.5.1"
+pytest-mock = ">=3.14"
 
 [tool.poetry.group.docs.dependencies]
 mkdocs = ">=1.6.0"
@@ -65,8 +74,13 @@ pymdown-extensions = ">=10.0"
 mike = ">=2.1.0"
 
 [tool.deptry.per_rule_ignores]
-DEP002 = ["openpyxl"]
+DEP002 = ["xlrd"]
+
+[tool.poetry-dynamic-versioning]
+enable = true
+vcs = "git"
+style = "pep440"
 
 [build-system]
-requires = ["poetry-core>=1.7.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core>=1.7.0", "poetry-dynamic-versioning>=1.4.0,<2.0.0"]
+build-backend = "poetry_dynamic_versioning.backend"

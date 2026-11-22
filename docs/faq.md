@@ -10,10 +10,8 @@ entries as they come up in issues.
 ## How do I install it?
 
 ```bash
-pip install <project_name>
+pip install opendata-calendars
 ```
-
-Replace with the real distribution name and any extras (e.g. `pip install "<project_name>[web]"`).
 
 ## How do I add or update a dependency?
 
@@ -33,5 +31,11 @@ See the `python = "..."` constraint in `pyproject.toml`; CI runs the test matrix
 
 ## How is the version determined?
 
-The version is the **git tag** (via poetry-dynamic-versioning); `pyproject.toml` holds a `0.0.0`
-placeholder. Cut a release from the release workflow — see [Contributing](contributing.md).
+The version comes from the latest git tag `vX.Y.Z`, through `poetry-dynamic-versioning`;
+`pyproject.toml` keeps only a placeholder. See [Contributing](contributing.md#releasing).
+
+## Where do the offline calendars live?
+
+In `purecalendars`, which computes holidays without any network access. This package is the
+live counterpart: it fetches the publisher pages and `bin/check_calendar_drift.py` compares the
+two.

@@ -2,8 +2,6 @@
 
 from importlib.metadata import PackageNotFoundError, version
 
-from .main import main
-
 
 try:
     __version__ = version("opendata-calendars")
@@ -13,5 +11,4 @@ except PackageNotFoundError:  # pragma: no cover - source tree without an instal
 
 __all__ = [
     "__version__",
-    "main",
 ]
