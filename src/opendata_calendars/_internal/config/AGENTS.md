@@ -40,8 +40,7 @@ on a violation before types are applied).
 - **`contracts/` is the ONLY place a `FileContract` is constructed** — statically enforced
   by ruff (`TID251`). Loaders import the instances; they never build one inline.
 
-No contract is defined yet. Drop this whole sub-package if your library never reads
-tabular inputs.
+`anbima_holidays.py` (`ANBIMA_HOLIDAYS`) is the one contract defined so far.
 
 ## The `ports/` sub-package (opt-in)
 

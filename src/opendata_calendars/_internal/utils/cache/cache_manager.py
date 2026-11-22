@@ -71,7 +71,7 @@ class CacheManager(metaclass=TypeChecker):
         bool_reuse_cache: bool = True,
         int_days_cache_expiration: int = 1,
         int_cache_ttl_days: int = 30,
-        path_cache_dir: str | None = None,
+        path_cache_dir: str | os.PathLike[str] | None = None,
         logger: Logger | None = None,
         cls_log_emitter: LogEmitter | None = None,
     ) -> None:
@@ -87,7 +87,7 @@ class CacheManager(metaclass=TypeChecker):
                 Number of days after which the cache expires (default: 1)
         int_cache_ttl_days : int
                 Number of days after which the cache is considered expired (default: 30)
-        path_cache_dir : Optional[str]
+        path_cache_dir : str | os.PathLike[str] | None
                 Path to the cache directory (default: None)
         logger : Optional[Logger]
                 The stdlib logger to back the default log emitter (default: None)
@@ -119,13 +119,13 @@ class CacheManager(metaclass=TypeChecker):
         self.timedelta_cache_ttl_days = timedelta(days=int_cache_ttl_days)
 
     def _get_cache_dir_path(
-        self, path_cache_dir: str | None, bool_create: bool = True
+        self, path_cache_dir: str | os.PathLike[str] | None, bool_create: bool = True
     ) -> Path:  # complexity-ok: ported verbatim
         """Get the path to the cache directory.
 
         Parameters
         ----------
-        path_cache_dir : Optional[str]
+        path_cache_dir : str | os.PathLike[str] | None
                 Path to the cache directory
         bool_create : bool
                 If True, create the directory when missing (default: True)

@@ -1239,3 +1239,22 @@ def test_cache_round_trip_preserves_provider_shaped_frame(
     path_file = cache_manager_custom._get_cache_file_path("provider_shape")
     CacheManager._write_cache_file(path_file, datetime(2026, 1, 2), df_)
     pd.testing.assert_frame_equal(CacheManager._read_cache_file(path_file)[1], df_)
+
+
+def test_init_accepts_a_path_object_for_the_cache_directory(tmp_path: Path) -> None:
+    """Test ``path_cache_dir`` takes a ``Path``, as the docs and the naming convention imply.
+
+    Verifies
+    --------
+    - The resolved cache directory equals the Path passed in
+
+    Parameters
+    ----------
+    tmp_path : Path
+            Temporary directory path for testing
+
+    Returns
+    -------
+    None
+    """
+    assert CacheManager(path_cache_dir=tmp_path / "c")._path_cache_dir == tmp_path / "c"
