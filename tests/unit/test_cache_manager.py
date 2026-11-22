@@ -1137,7 +1137,11 @@ def test_load_cache_in_memory_expired_is_a_miss(
     cache_manager_custom.bool_persist_cache = False
     cache_manager_custom._cache["old"] = sample_dataframe
     cache_manager_custom._cache_created["old"] = datetime.now() - timedelta(days=400)
-    assert cache_manager_custom._load_cache("old") is None
+    assert (
+        cache_manager_custom._load_cache("old"),
+        "old" in cache_manager_custom._cache,
+        "old" in cache_manager_custom._cache_created,
+    ) == (None, False, False)
 
 
 def test_save_cache_write_failure_is_logged_not_raised(

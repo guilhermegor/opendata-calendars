@@ -290,6 +290,8 @@ class CacheManager(metaclass=TypeChecker):
             )
             if bool_fresh and df_cached is not None and self._validate_cached_dataframe(df_cached):
                 return df_cached
+            self._cache.pop(key, None)
+            self._cache_created.pop(key, None)
 
         if not self.bool_persist_cache:
             return None
