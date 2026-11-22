@@ -422,13 +422,15 @@ def test_the_ci_failure_leads_with_the_pr_body_line_not_the_env_var(
     monkeypatch.setenv("CI", "true")
     gate.report(["some finding"], "base-sha", 1)
 
-    assert "TEST_CHANGE_OK is ignored under CI" in capsys.readouterr().out
+    str_out = capsys.readouterr().out
+
+    assert "TEST_CHANGE_OK is ignored under CI" in str_out
 
 
-def test_the_ci_failure_does_not_advise_a_git_commit_trailer(
+def test_the_ci_failure_does_not_suggest_a_git_commit_trailer(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """Under CI the advice never tells the reader to add a commit trailer.
+    """Under CI the advice never tells the author to amend the commit message.
 
     Parameters
     ----------

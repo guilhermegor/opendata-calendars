@@ -25,8 +25,8 @@ class _Sample(metaclass=TypeChecker):
         return x * 2
 
 
-def test_engine_imports_and_enforces_after_rewrite() -> None:
-    """The rewritten engine imports and accepts a correctly typed argument."""
+def test_engine_imports_and_accepts_a_right_typed_argument_after_rewrite() -> None:
+    """The rewritten engine imports and accepts a right-typed argument."""
     assert _Sample.doubled(5) == 10
 
 
@@ -59,12 +59,12 @@ def _add(a: int, b: int) -> int:
     return a + b
 
 
+def test_decorator_accepts_right_types() -> None:
+    """The decorator lets a standalone function's right-typed arguments through."""
+    assert _add(1, 2) == 3
+
+
 def test_decorator_rejects_wrong_type() -> None:
     """The decorator validates a standalone function's arguments."""
     with pytest.raises(TypeError):
         _add(1, "two")
-
-
-def test_decorator_accepts_right_type() -> None:
-    """The decorator lets a correctly typed call through."""
-    assert _add(1, 2) == 3
