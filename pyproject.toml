@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "opendata-calendars"
-version = "0.0.1"
+version = "0.0.0"
 description = "Fetch exchange and bank holiday calendars from their publishers (B3, ANBIMA, FEBRABAN, NASDAQ, US federal), with cache and provenance, returned as purecalendars calendars"
 authors = ["guilhermegor"]
 readme = "README.md"
@@ -76,6 +76,11 @@ mike = ">=2.1.0"
 [tool.deptry.per_rule_ignores]
 DEP002 = ["xlrd"]
 
+[tool.poetry-dynamic-versioning]
+enable = true
+vcs = "git"
+style = "pep440"
+
 [build-system]
-requires = ["poetry-core>=1.7.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core>=1.7.0", "poetry-dynamic-versioning>=1.4.0,<2.0.0"]
+build-backend = "poetry_dynamic_versioning.backend"
