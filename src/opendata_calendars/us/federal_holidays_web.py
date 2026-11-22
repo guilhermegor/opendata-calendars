@@ -91,7 +91,9 @@ class DatesUSFederalHolidaysWeb(ABCCalendarOperations):
         df_ = self.transform_holidays(df_)
         return [(row["NAME"], row["DATE_WINS"]) for _, row in df_.iterrows()]
 
-    @CacheManager.cache_df(key="usa_federal_holidays_web")
+    @CacheManager.cache_df(
+        key=lambda self: f"usa_federal_holidays_web_{self.int_year_start}_{self.int_year_end}"
+    )
     def get_holidays_years(self) -> pd.DataFrame:
         """Fetch Federal holidays for multiple years.
 

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 from typing import Any
+from unittest.mock import Mock
 
 import pytest
 
@@ -236,3 +237,10 @@ def test_default_page_timeout_is_usable() -> None:
     # one-assert-ok: ported verbatim; facets of one scenario, split tracked in the ledger
     assert PlaywrightScraper().int_default_timeout == _DEFAULT_TIMEOUT_MS
     assert PlaywrightScraper().int_default_timeout >= 5_000
+
+
+def test_page_annotated_methods_pass_the_runtime_type_check() -> None:
+    """``Page`` must resolve at runtime so beartype can check the annotated methods."""
+    page = Mock()
+    page.locator.return_value.first.count.return_value = 0
+    assert PlaywrightScraper()._read_attribute(page, "//a/@href", 10) is None

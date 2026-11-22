@@ -72,7 +72,11 @@ class DatesUSNasdaq(ABCCalendarOperations):
         """
         df_ = self.get_holidays_raw()
         df_ = self.transform_holidays(df_)
-        return [(row["DESCRIPTION"], row["DATE_WINS"]) for _, row in df_.iterrows()]
+        return [
+            (row["DESCRIPTION"], row["DATE_WINS"])
+            for _, row in df_.iterrows()
+            if row["STATUS"].strip().lower() == "closed"
+        ]
 
     @CacheManager.cache_df(key="usa_nasdaq_holidays")
     def get_holidays_raw(

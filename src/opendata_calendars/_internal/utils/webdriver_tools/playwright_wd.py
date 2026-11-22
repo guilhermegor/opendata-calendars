@@ -26,12 +26,13 @@ from opendata_calendars._internal.utils.typing import TypeChecker
 
 
 if TYPE_CHECKING:
-    from playwright.sync_api import Browser, BrowserContext, Page, Playwright
+    from playwright.sync_api import Browser, BrowserContext, Playwright
 
 try:
-    from playwright.sync_api import sync_playwright
+    from playwright.sync_api import Page, sync_playwright
 except ImportError:  # pragma: no cover - exercised only when the `web` extra is absent
     sync_playwright = None  # type: ignore[assignment]
+    Page = object  # type: ignore[assignment,misc]
 
 _WEB_EXTRA_HINT = (
     "Playwright is required for the web-scrape provider. Install it with "

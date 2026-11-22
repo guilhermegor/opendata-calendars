@@ -699,3 +699,29 @@ def test_federal_validate_date_string_invalid_format() -> None:
     instance = DatesUSFederalHolidaysWeb()
     with pytest.raises(ValueError, match="Date string must contain month and day"):
         instance._validate_date_string("January")
+
+
+def test_nasdaq_source_holidays_excludes_early_close_sessions(mocker: MockerFixture) -> None:
+    """An early-close session is a trading day, not a full-day holiday."""
+    df_raw = pd.DataFrame(
+        {
+            "DATE": ["November 26, 2026", "November 27, 2026"],
+            "DESCRIPTION": ["Thanksgiving Day", "Day after Thanksgiving"],
+            "STATUS": ["Closed", "1:00 p.m."],
+        }
+    )
+    cls_nasdaq = DatesUSNasdaq(bool_persist_cache=False, bool_reuse_cache=False)
+    mocker.patch.object(DatesUSNasdaq, "get_holidays_raw", return_value=df_raw)
+    assert [name for name, _ in cls_nasdaq._source_holidays()] == ["Thanksgiving Day"]
+
+
+def test_federal_cache_key_includes_the_year_bounds() -> None:
+    """Instances with different year bounds must not share one cache entry."""
+    cls_a = DatesUSFederalHolidaysWeb(int_year_start=2024, int_year_end=2024)
+    cls_b = DatesUSFederalHolidaysWeb(int_year_start=2025, int_year_end=2025)
+    path_a = cls_a.cls_cache_manager._get_cache_file_path(
+        f"usa_federal_holidays_web_{cls_a.int_year_start}_{cls_a.int_year_end}"
+    )
+    assert path_a != cls_b.cls_cache_manager._get_cache_file_path(
+        f"usa_federal_holidays_web_{cls_b.int_year_start}_{cls_b.int_year_end}"
+    )
