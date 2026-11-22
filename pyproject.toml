@@ -30,7 +30,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = ">=3.11,<4.0"
-purecalendars = ">=4.0.1,<5"
+purecalendars = ">=4.1.0,<5"
 beartype = ">=0.22"
 pandas = ">=2.1.0"
 numpy = ">=1.22"

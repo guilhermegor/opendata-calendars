@@ -4,7 +4,7 @@ from datetime import date, timedelta
 from logging import Logger
 
 import pandas as pd
-from purecalendars._internal.utils.calendars.abc_calendar_operations import ABCCalendarOperations
+from purecalendars import ABCCalendarOperations
 import requests
 
 from opendata_calendars._internal.utils.cache.cache_manager import CacheManager

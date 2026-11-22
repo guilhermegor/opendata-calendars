@@ -4,7 +4,7 @@ from datetime import date
 from logging import Logger
 
 import pandas as pd
-from purecalendars._internal.utils.calendars.abc_calendar_operations import ABCCalendarOperations
+from purecalendars import ABCCalendarOperations
 import requests
 from requests.exceptions import RequestException
 

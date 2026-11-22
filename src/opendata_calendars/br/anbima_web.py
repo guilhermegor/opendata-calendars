@@ -6,7 +6,7 @@ from pathlib import Path
 import tempfile
 
 import pandas as pd
-from purecalendars._internal.utils.calendars.abc_calendar_operations import ABCCalendarOperations
+from purecalendars import ABCCalendarOperations
 import requests
 
 from opendata_calendars._internal.config.contracts import ANBIMA_HOLIDAYS

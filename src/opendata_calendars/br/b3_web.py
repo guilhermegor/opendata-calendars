@@ -28,7 +28,7 @@ import re
 
 from lxml.html import HtmlElement
 import pandas as pd
-from purecalendars._internal.utils.calendars.abc_calendar_operations import ABCCalendarOperations
+from purecalendars import ABCCalendarOperations
 import requests
 from requests.exceptions import RequestException
 
