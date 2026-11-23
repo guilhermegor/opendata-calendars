@@ -1,5 +1,5 @@
 tier: lib-minimal
-review_bot_roster: false
+review_bot_roster: true
 blueprintx_version: 3.9.5
 blueprintx_commit: unknown
 scaffold_commit: unknown
